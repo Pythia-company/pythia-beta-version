@@ -47,9 +47,11 @@ contract PriceFeedsMarket is AbstractMarket{
 
     function _getMarketOutcome() internal view override returns(uint256){
         uint256 price = priceFeeder.getLatestPrice(priceFeedAddress);
-        for(uint256 i = 0; i < numberOfOutcomes - 1; i++){
-            if(price < outcomes[i]){
-                return i;
+        for(uint256 i = 0; i < numberOfOutcomes - 2; i++){
+            if(price < outcomes[0]){
+                return 0;
+            } else if(price < outcomes[i]){
+                return i + 1;
             }
         }
         return numberOfOutcomes;

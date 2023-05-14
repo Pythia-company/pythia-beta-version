@@ -88,17 +88,22 @@ contract PythiaFactory is ERC721, Ownable {
         // trial period in days
         trialPeriod = _trialPeriodDays * 24 * 60 * 60;
 
+        address _subscriptionContractAddress = ContractDeployer.deploySubscriptionContract(
+            _subscriptionTokenAddress,
+            _treasuryAddress,
+            _baseAmountRecurring
+        );
+
         // deploy subsctibtion contract
         subscriptionContract = ERC948(
-            ContractDeployer.deploySubscriptionContract(
-                _subscriptionTokenAddress,
-                _treasuryAddress,
-                _baseAmountRecurring
-            )
+            _subscriptionContractAddress
         );
     }
 
     function createAccount() external  {
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        _safeMint(msg.sender, tokenId);
         User memory user = User(
             {
                 registrationDate: block.timestamp,
@@ -106,9 +111,6 @@ contract PythiaFactory is ERC721, Ownable {
             }
         );
         users[msg.sender] = user;
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        _safeMint(msg.sender, tokenId);
         emit NewUser(msg.sender, user.registrationDate);
     }
     
@@ -229,7 +231,7 @@ contract PythiaFactory is ERC721, Ownable {
             _signature
         );
     
-        address _reputationTokenAddress = _market.getReputationTokenAddress();
+        address _reputationTokenAddress = markets[_marketAddress].reputationTokenAddress;
 
         ReputationToken _token = ReputationToken(
             _reputationTokenAddress

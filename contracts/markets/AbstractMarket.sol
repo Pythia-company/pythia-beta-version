@@ -27,7 +27,6 @@ abstract contract AbstractMarket{
     uint256 creationDate;
     uint256 wageDeadline;
     uint256 resolutionDate;
-    address reputationTokenAddress;
     bool resolved;
     uint256 answer;
     
@@ -49,7 +48,7 @@ abstract contract AbstractMarket{
         resolved = false;
     }
 
-    function predict(bytes32 _encodedPrediction) external virtual {
+    function predict(bytes32 _encodedPrediction) external {
         require(
             block.timestamp <= wageDeadline,
             "market is not active"
@@ -62,6 +61,7 @@ abstract contract AbstractMarket{
             ),
             "trial has expired, subscribe to make predictions"
         );
+        require(predictions[msg.sender].predicted == false, "user has already predicted");
         predictions[msg.sender].encodedPrediction = _encodedPrediction;
         predictions[msg.sender].predictionTimestamp = block.timestamp;
         predictions[msg.sender].predicted = true;
@@ -70,7 +70,7 @@ abstract contract AbstractMarket{
     function disclosePrediction(
         uint256 _decodedPrediction,
         bytes calldata _signature
-    ) external virtual returns(uint256){
+    ) external returns(uint256){
         require(resolved == true, "market has not yet resolved");
         require(
             predictions[msg.sender].predicted == true,
@@ -96,10 +96,6 @@ abstract contract AbstractMarket{
 
     function verifiedPrediction() external view returns(bool){
         return predictions[msg.sender].verifiedPrediction;
-    }
-
-    function getReputationTokenAddress() external view returns(address){
-        return reputationTokenAddress;
     }
 
     function calculateReward(
@@ -152,16 +148,6 @@ abstract contract AbstractMarket{
             _signature
         );
         return verified;
-    }
-
-    function _generateMarketId(
-        string memory _question
-    ) internal view virtual returns(uint256){
-        return uint256(
-            keccak256(
-                abi.encodePacked(block.number, block.timestamp, _question)
-            )
-        );
     }
 
     function _getMarketOutcome() internal view virtual returns(uint256);
