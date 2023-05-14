@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '../libraries/SignatureVerifier.sol';
+import "../libraries/SignatureVerifier.sol";
 import "../libraries/Maths.sol";
 import "../PythiaFactory.sol";
 
@@ -30,25 +30,22 @@ abstract contract AbstractMarket{
     address reputationTokenAddress;
     bool resolved;
     uint256 answer;
-    uint256 marketId;
     
     mapping(address => Prediction) public predictions;
 
     constructor(
+        address _factoryContractAddress,
         string memory _question,
         uint256 _numberOfOutcomes,
         uint256 _wageDeadline,
-        uint256 _resolutionDate,
-        address _reputationTokenAddress
+        uint256 _resolutionDate
     ){  
-        pythiaFactory = PythiaFactory(msg.sender);
+        pythiaFactory = PythiaFactory(_factoryContractAddress);
+        numberOfOutcomes = _numberOfOutcomes;
         creationDate = block.timestamp;
-        marketId = _generateMarketId(_question);
         question = _question;
         wageDeadline = _wageDeadline;
         resolutionDate = _resolutionDate;
-        reputationTokenAddress = _reputationTokenAddress;
-        numberOfOutcomes = _numberOfOutcomes;
         resolved = false;
     }
 
@@ -57,12 +54,13 @@ abstract contract AbstractMarket{
             block.timestamp <= wageDeadline,
             "market is not active"
         );
+        require(pythiaFactory.isUser(msg.sender), "user is not registered");
         require(
             (
                 (pythiaFactory.isSubscribed(msg.sender) == true) ||
-                (pythiaFactory.isTrialUser(msg.sender) == true)
+                (pythiaFactory.isInTrial(msg.sender) == true)
             ),
-            "user is not in trial or not subscribed"
+            "trial has expired, subscribe to make predictions"
         );
         predictions[msg.sender].encodedPrediction = _encodedPrediction;
         predictions[msg.sender].predictionTimestamp = block.timestamp;
@@ -98,10 +96,6 @@ abstract contract AbstractMarket{
 
     function verifiedPrediction() external view returns(bool){
         return predictions[msg.sender].verifiedPrediction;
-    }
-
-    function getMarketId() external view returns(uint256){
-        return marketId;
     }
 
     function getReputationTokenAddress() external view returns(address){
@@ -150,7 +144,7 @@ abstract contract AbstractMarket{
             "submited wrong signature"
         );
         bytes32 _messageHash = keccak256(
-            abi.encodePacked(msg.sender, _decodedPrediction, marketId)
+            abi.encodePacked(msg.sender, _decodedPrediction, address(this))
         );
         bool verified = SignatureVerifier.verify(
             msg.sender,

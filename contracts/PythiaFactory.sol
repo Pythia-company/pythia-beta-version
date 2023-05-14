@@ -1,131 +1,140 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./markets/AbstractMarket.sol";
-import "./markets/PriceFeedsMarket.sol";
-import "./markets/RelityEthMarket.sol";
 import "./tokens/ReputationToken.sol";
-import "./subscription/Subscription.sol";
+import "./libraries/ContractDeployer.sol";
 
-contract PythiaFactory is ERC721, ERC721Burnable, Ownable, ERC948 {
+contract PythiaFactory is ERC721, Ownable {
     using Counters for Counters.Counter;
 
+    event NewMarket(
+        address indexed _marketAddress,
+        string _question,
+        uint256 _wageDeadline,
+        uint256 _resolutionDate,
+        address _reputationTokenAddress
+    );
+
+    event NewUser(
+        address indexed _user,
+        uint256 _registrationDate
+    );
+
+    event NewReputationToken(
+        address indexed _address
+    );
+
+    event NewReputationTransaction(
+        address indexed _user,
+        address indexed _market,
+        uint256 amount,
+        bool received
+    );
+
+
+    // user representation
     struct User{
         uint256 registrationDate;
         bool active;
     }
 
-    struct ReputationTransaction{
+    //market 
+    struct Market{
+        bool active;
         address reputationTokenAddress;
+    }
+
+
+    // reputation transaction representation
+    struct ReputationTransaction{
+        address user;
+        address market;
         uint256 amount;
+        bool received;
     }
     
-    address[] marketAddresses;
+    // users
     mapping(address => User) private users;
-    mapping(address => bool) private markets;
+
+    //markets
+    mapping(address => Market) private markets;
+
+    // reputation token addresses
+    mapping(address => bool) reputationTokens;
+
+    // reputation token transactions
     mapping(uint256 => ReputationTransaction) private reputationTransactions;
 
+    // legth of trial period
     uint256 trialPeriod;
-    Subscription subscriptionContract;
+
+    //subcription contract
+    ERC948 subscriptionContract;
 
     Counters.Counter private _tokenIdCounter;
 
     constructor(
         uint256 _trialPeriodDays,
-        address _subscriptionTokenAddress
+        address _subscriptionTokenAddress,
+        address _treasuryAddress,
+        uint256 _baseAmountRecurring
     ) ERC721("PythiaAccount", "PYAC")
     Ownable()
-    ERC948(_subscriptionTokenAddress){
-        require(_trialPeriodDays < 60, "trial period exceeds sensible number");
+    {
+        // trial period in days
         trialPeriod = _trialPeriodDays * 24 * 60 * 60;
 
+        // deploy subsctibtion contract
+        subscriptionContract = ERC948(
+            ContractDeployer.deploySubscriptionContract(
+                _subscriptionTokenAddress,
+                _treasuryAddress,
+                _baseAmountRecurring
+            )
+        );
     }
 
     function createAccount() external  {
-        require(
-            users[msg.sender].active == false,
-            "account already exists"
+        User memory user = User(
+            {
+                registrationDate: block.timestamp,
+                active: true
+            }
         );
-        users[msg.sender].registrationDate = block.timestamp;
-        users[msg.sender].active = true;
+        users[msg.sender] = user;
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(msg.sender, tokenId);
+        emit NewUser(msg.sender, user.registrationDate);
+    }
+    
+    function isUser(address _user) external view returns(bool){
+        return users[_user].active;
     }
 
-    function createSubscription(
-        address _payeeAddress,
-        uint _amountRecurring,
-        uint _amountInitial,
-        uint _periodType,
-        uint _periodMultiplier,
-        uint _startTime,
-        string calldata _data
-        )
-        external
-        override
-        subscriptionNotActive
-    {
-        require(
-            users[msg.sender].active == true,
-            "user account does not exist"
-        );
-        // Ensure that _periodType is valid
-        // TODO support hour, day, week, month, year
-        require(
-            (_periodType == 0),
-            'Only period types of second are supported'
-        );
 
-        // Check that subscription start time is now or in the future
-        require((_startTime >= block.timestamp),
-                'Subscription must not start in the past');
-
-        uint amountRequired = _amountInitial + _amountRecurring;
-        require((subscriptionToken.balanceOf(msg.sender) >= amountRequired),
-                'Insufficient balance for initial + 1x recurring amount');
-
-        //  Check that contact has approval for at least the initial and first recurring payment
-        require(
-            subscriptionToken.allowance(
-                msg.sender,
-                address(this)
-            ) >= amountRequired,
-            'Insufficient approval for initial + 1x recurring amount'
-        );
-
-        Subscription memory newSubscription = Subscription({
-            payeeAddress: _payeeAddress,
-            amountRecurring: _amountRecurring,
-            amountInitial: _amountInitial,
-            periodType: _periodType,
-            periodMultiplier: _periodMultiplier,
-
-            // TODO set start time appropriately and deal with interaction w nextPaymentTime
-            startTime: block.timestamp,
-
-            data: _data,
-            active: true,
-
-            // TODO support hour, day, week, month, year
-            nextPaymentTime: block.timestamp + _periodMultiplier
-        });
-        subscriptions[msg.sender] = newSubscription;
-    }
-
-    function isTrialUser(address _userAddress) external view returns(bool){
-        require(
-            users[_userAddress].active == true,
-            "account does not exist"
-        );
+    function isInTrial(address _user) external view returns(bool){
+        require(block.timestamp >= users[_user].registrationDate, "time is negative");
         uint256 timediff = (
-            block.timestamp - users[_userAddress].registrationDate
+            block.timestamp - users[_user].registrationDate
         );
-        return timediff > trialPeriod;
+        return timediff <= trialPeriod;
+    }
+
+    function isSubscribed(address _user) external view returns(bool){
+        return subscriptionContract.isSubscribed(_user);
+    }
+
+    function deployNewReputationToken(
+        string memory _name,
+        string memory _symbol
+    ) external {
+        address _tokenAddress = ContractDeployer.deployReputationToken(_name, _symbol);
+        reputationTokens[_tokenAddress] = true;
     }
 
     function createPriceFeedsMarket(
@@ -134,44 +143,50 @@ contract PythiaFactory is ERC721, ERC721Burnable, Ownable, ERC948 {
         uint256 _numberOfOutcomes,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
-        address _reputationTokenAddress,
         address _priceFeedAddress,
-        address _priceFeederAddress
-    ) public onlyOwner returns(address){
-        PriceFeedsMarket _marketAddress = new PriceFeedsMarket(
+        address _priceFeederAddress,
+        address _reputationTokenAddress
+    ) public onlyOwner{
+        address _marketAddress = ContractDeployer.deployPriceFeedsMarket(
+            address(this),
             _question,
             _outcomes,
             _numberOfOutcomes,
             _wageDeadline,
             _resolutionDate,
-            _reputationTokenAddress,
             _priceFeedAddress,
             _priceFeederAddress
         );
-        marketAddresses.push(address(_marketAddress));
-        markets[address(_marketAddress)] = true;
-        return address(_marketAddress);
+        markets[_marketAddress].active = true;
+        markets[_marketAddress].reputationTokenAddress = _reputationTokenAddress;
+        emit NewMarket(
+            _marketAddress,
+            _question,
+            _wageDeadline,
+            _resolutionDate,
+            _reputationTokenAddress
+        );
     }
 
     function createRealityEthMarket(
+        string memory _question,
+        uint256 _numberOfOutcomes,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
-        uint256 _numberOfOutcomes,
-        address _reputationTokenAddress,
-        string memory _question,
         uint256 _template_id,
         address _arbitrator,
         uint32 _timeout,
         uint256 _nonce,
         address _realityEthAddress,
-        uint256 _min_bond
-    ) public onlyOwner returns(address){
-        RealityETHMarket _marketAddress = new RealityETHMarket(
+        uint256 _min_bond,
+        address _reputationTokenAddress
+    ) public onlyOwner {
+        address _marketAddress = ContractDeployer.deployRealityETHMarket(
+            address(this),
             _question,
             _numberOfOutcomes,
             _wageDeadline,
             _resolutionDate,
-            _reputationTokenAddress,
             _template_id,
             _arbitrator,
             _timeout,
@@ -179,42 +194,64 @@ contract PythiaFactory is ERC721, ERC721Burnable, Ownable, ERC948 {
             _realityEthAddress,
             _min_bond
         );
-        marketAddresses.push(address(_marketAddress));
-        markets[address(_marketAddress)] = true;
-        return address(_marketAddress);
+        markets[_marketAddress].active = true;
+        markets[_marketAddress].reputationTokenAddress = _reputationTokenAddress;
+        emit NewMarket(
+            _marketAddress,
+            _question,
+            _wageDeadline,
+            _resolutionDate,
+            _reputationTokenAddress
+        );
     }
 
     function receiveReward(
         address _marketAddress,
         uint256 _decodedPrediction,
         bytes calldata _signature
-    ) public {
-        AbstractMarket _market = AbstractMarket(_marketAddress);
-        uint256 _reward;
-        _reward = _market.disclosePrediction(
-            _decodedPrediction,
-            _signature
-        );
-        address _reputationTokenAddress = _market.getReputationTokenAddress();
-        ReputationToken _token = ReputationToken(
-            _reputationTokenAddress
-        );
+    ) external {
+
         uint256 _reputationTransactionHash = uint256(
             keccak256(
                 abi.encodePacked(msg.sender, _marketAddress)
             )
         );
-        (
-            reputationTransactions
-            [_reputationTransactionHash]
-            .reputationTokenAddress
-        ) = _reputationTokenAddress;
-        (
-            reputationTransactions
-            [_reputationTransactionHash]
-            .amount
-        ) = _reward;
+
+        require(
+            reputationTransactions[_reputationTransactionHash].received == false,
+            "reward was already received"
+        );
+
+        AbstractMarket _market = AbstractMarket(_marketAddress);
+
+        uint256 _reward = _market.disclosePrediction(
+            _decodedPrediction,
+            _signature
+        );
+    
+        address _reputationTokenAddress = _market.getReputationTokenAddress();
+
+        ReputationToken _token = ReputationToken(
+            _reputationTokenAddress
+        );
+
+
+        ReputationTransaction memory reputationTransaction = ReputationTransaction(
+            {
+                user: msg.sender,
+                market: _marketAddress,
+                amount: _reward,
+                received: true
+            }
+        );
+
         _token.rate(msg.sender, _reward);
+        emit NewReputationTransaction(
+            msg.sender,
+            _marketAddress,
+            _reward,
+            true
+        );
     }
 
     function updateTrialPeriod(uint256 _newtrialPeriod) public onlyOwner{
@@ -229,7 +266,7 @@ contract PythiaFactory is ERC721, ERC721Burnable, Ownable, ERC948 {
     ) internal override {
         require(
             users[to].active == false,
-            "account already exists"
+            "user already exists"
         );
         require(
             from == address(0) || to == address(0),

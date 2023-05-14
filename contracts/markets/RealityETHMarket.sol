@@ -16,11 +16,11 @@ contract RealityETHMarket is AbstractMarket{
     uint256 template_id;
 
     constructor(
+        address _factoryContractAddress,
         string memory _question,
         uint256 _numberOfOutcomes,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
-        address _reputationTokenAddress,
         uint256 _template_id,
         address _arbitrator,
         uint32 _timeout,
@@ -28,11 +28,11 @@ contract RealityETHMarket is AbstractMarket{
         address _realityEthAddress,
         uint256 _min_bond
     ) AbstractMarket(
+        _factoryContractAddress,
         _question,
         _numberOfOutcomes,
         _wageDeadline,
-        _resolutionDate,
-        _reputationTokenAddress
+        _resolutionDate
     )
     { 
         template_id = _template_id;
