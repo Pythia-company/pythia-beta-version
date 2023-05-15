@@ -2,11 +2,9 @@ pragma solidity ^0.8.0;
 
 import "../markets/PriceFeedsMarket.sol";
 import "../markets/RealityETHMarket.sol";
-import "../subscription/Subscription.sol";
-import "../tokens/ReputationToken.sol";
 
 
-library ContractDeployer {
+library MarketDeployer {
 
     function deployPriceFeedsMarket(
         address _factoryContractAddress,
@@ -62,30 +60,5 @@ library ContractDeployer {
             )
         );
         return _marketAddress;
-    }
-
-    function deploySubscriptionContract(
-        address _subscriptionTokenAddress,
-        address _payeeAddress,
-        uint256 _baseAmountRecurring
-    ) external returns(address){
-        address _subscriptionContractAddress = address(
-            new ERC948(
-                _subscriptionTokenAddress,
-                _payeeAddress,
-                _baseAmountRecurring
-            )
-        );
-        return _subscriptionContractAddress;
-    }
-
-    function deployReputationToken(
-        string memory _name, 
-        string memory _symbol
-    ) external returns(address){
-        address _reputationTokenAddress = address(
-            new ReputationToken(_name, _symbol)
-        );
-        return _reputationTokenAddress;
     }
 }

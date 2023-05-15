@@ -63,26 +63,19 @@ contract ERC948 {
             ) >= _amountRecurring,
             "Insufficient approval for initial + 1x recurring amount"
         );
-
-        uint256 _startTime = block.timestamp;
-
-        Subscription memory newSubscription = Subscription({
-            periodMultiplier: _periodMultiplier,
-            startTime: _startTime,
-            active: true,
-            nextPaymentTime: block.timestamp + _periodMultiplier
-        });
-
-        subscriptions[msg.sender] = newSubscription;
-
+    
+        subscriptions[msg.sender].periodMultiplier = _periodMultiplier;
+        subscriptions[msg.sender].startTime = block.timestamp;
+        subscriptions[msg.sender].active = true;
+        subscriptions[msg.sender].nextPaymentTime = block.timestamp + _periodMultiplier;
         // Make initial payment
         subscriptionToken.transferFrom(msg.sender, payeeAddress, _amountRecurring);
 
         // Emit NewSubscription event
         emit NewSubscription(
             msg.sender,
-            _periodMultiplier,
-            _startTime
+            subscriptions[msg.sender].periodMultiplier,
+            subscriptions[msg.sender].startTime
         );
     }
     

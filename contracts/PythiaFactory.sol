@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./markets/AbstractMarket.sol";
 import "./tokens/ReputationToken.sol";
-import "./libraries/ContractDeployer.sol";
+import "./subscription/Subscription.sol";
+import "./libraries/MarketDeployer.sol";
 
 contract PythiaFactory is ERC721, Ownable {
     using Counters for Counters.Counter;
@@ -77,29 +78,33 @@ contract PythiaFactory is ERC721, Ownable {
 
     Counters.Counter private _tokenIdCounter;
 
+    /**
+    * @dev contructor
+    * @param _trialPeriodDays Trial period in days
+    * @param _subscriptionTokenAddress Address of subcription token
+    * @param _baseAmountRecurring base subcription amount
+    */
     constructor(
         uint256 _trialPeriodDays,
         address _subscriptionTokenAddress,
         address _treasuryAddress,
         uint256 _baseAmountRecurring
-    ) ERC721("PythiaAccount", "PYAC")
+    ) ERC721("PythiaAccoun1", "PYA1")
     Ownable()
     {
         // trial period in days
         trialPeriod = _trialPeriodDays * 24 * 60 * 60;
 
-        address _subscriptionContractAddress = ContractDeployer.deploySubscriptionContract(
-            _subscriptionTokenAddress,
-            _treasuryAddress,
-            _baseAmountRecurring
-        );
-
-        // deploy subsctibtion contract
-        subscriptionContract = ERC948(
-            _subscriptionContractAddress
+        subscriptionContract = new ERC948(
+                _subscriptionTokenAddress,
+                _treasuryAddress,
+                _baseAmountRecurring
         );
     }
 
+    /**
+    * @dev create account
+    */
     function createAccount() external  {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -114,11 +119,20 @@ contract PythiaFactory is ERC721, Ownable {
         emit NewUser(msg.sender, user.registrationDate);
     }
     
+    /**
+    * @dev check if account exists
+    * @param _user Address of user
+    * @return true if account exists
+    */
     function isUser(address _user) external view returns(bool){
         return users[_user].active;
     }
 
-
+    /**
+    * @dev check if user's trial expired
+    * @param _user Address of user
+    * @return true if trial has not expired
+    */
     function isInTrial(address _user) external view returns(bool){
         require(block.timestamp >= users[_user].registrationDate, "time is negative");
         uint256 timediff = (
@@ -127,18 +141,39 @@ contract PythiaFactory is ERC721, Ownable {
         return timediff <= trialPeriod;
     }
 
+    /**
+    * @dev check if user is subscribed
+    * @param _user Address of user
+    * @return true if user is subscribed
+    */
     function isSubscribed(address _user) external view returns(bool){
         return subscriptionContract.isSubscribed(_user);
     }
 
+    /**
+    * @dev deploy reputation token
+    * @param _name Name
+    * @param _symbol Symbol
+    */
     function deployNewReputationToken(
         string memory _name,
         string memory _symbol
     ) external {
-        address _tokenAddress = ContractDeployer.deployReputationToken(_name, _symbol);
+        address _tokenAddress = address(new ReputationToken(_name, _symbol));
         reputationTokens[_tokenAddress] = true;
     }
 
+    /**
+    * @dev create PriceFeeds market
+    * @param _question Question
+    * @param _outcomes List of possible outcomes - prices
+    * @param _numberOfOutcomes Number of outcomes
+    * @param _wageDeadline Prediction Deadline for the market
+    * @param _resolutionDate Resolution Date of the market
+    * @param _priceFeedAddress Address of chainlink pricefeed
+    * @param _priceFeederAddress Address of the pricefeeder contract
+    * @param _reputationTokenAddress Address of reputation token for this market
+    */
     function createPriceFeedsMarket(
         string memory _question,
         uint256[10] memory _outcomes,
@@ -148,8 +183,8 @@ contract PythiaFactory is ERC721, Ownable {
         address _priceFeedAddress,
         address _priceFeederAddress,
         address _reputationTokenAddress
-    ) public onlyOwner{
-        address _marketAddress = ContractDeployer.deployPriceFeedsMarket(
+    ) external onlyOwner{
+        address _marketAddress = MarketDeployer.deployPriceFeedsMarket(
             address(this),
             _question,
             _outcomes,
@@ -170,6 +205,19 @@ contract PythiaFactory is ERC721, Ownable {
         );
     }
 
+    /**
+    * @dev create Reality ETH market
+    * @param _question Question
+    * @param _numberOfOutcomes Number of outcomes
+    * @param _wageDeadline Prediction Deadline for the market
+    * @param _resolutionDate Resolution Date of the market
+    * @param _arbitrator Arbitrator for RealityEth market
+    * @param _timeout _timeout param for RealityEth market
+    * @param _nonce _nonce param for RealityEth market
+    * @param _realityEthAddress Address of RealityETH contract (chain specific)
+    * @param _min_bond Min bond param reality eth market
+    * @param _reputationTokenAddress Address of the Reputation Token
+    */
     function createRealityEthMarket(
         string memory _question,
         uint256 _numberOfOutcomes,
@@ -183,7 +231,7 @@ contract PythiaFactory is ERC721, Ownable {
         uint256 _min_bond,
         address _reputationTokenAddress
     ) public onlyOwner {
-        address _marketAddress = ContractDeployer.deployRealityETHMarket(
+        address _marketAddress = MarketDeployer.deployRealityETHMarket(
             address(this),
             _question,
             _numberOfOutcomes,
@@ -207,12 +255,18 @@ contract PythiaFactory is ERC721, Ownable {
         );
     }
 
+    /**
+    * @dev receive reward for the market
+    * @param _marketAddress Address of the market
+    * @param _decodedPrediction hash of signature of prediction
+    * @param  _signature Supposed preimage of _decodedPrediction
+    */
     function receiveReward(
         address _marketAddress,
         uint256 _decodedPrediction,
         bytes calldata _signature
     ) external {
-
+        require(markets[_marketAddress].active == true, "market with this address does not exists");
         uint256 _reputationTransactionHash = uint256(
             keccak256(
                 abi.encodePacked(msg.sender, _marketAddress)
@@ -237,15 +291,10 @@ contract PythiaFactory is ERC721, Ownable {
             _reputationTokenAddress
         );
 
-
-        ReputationTransaction memory reputationTransaction = ReputationTransaction(
-            {
-                user: msg.sender,
-                market: _marketAddress,
-                amount: _reward,
-                received: true
-            }
-        );
+        reputationTransactions[_reputationTransactionHash].user = msg.sender;
+        reputationTransactions[_reputationTransactionHash].market = _marketAddress;
+        reputationTransactions[_reputationTransactionHash].amount = _reward;
+        reputationTransactions[_reputationTransactionHash].received = true;
 
         _token.rate(msg.sender, _reward);
         emit NewReputationTransaction(
@@ -256,6 +305,7 @@ contract PythiaFactory is ERC721, Ownable {
         );
     }
 
+    
     function updateTrialPeriod(uint256 _newtrialPeriod) public onlyOwner{
         trialPeriod =  _newtrialPeriod;
     }
