@@ -9,9 +9,9 @@ describe("Pythia Factory", function () {
         const accounts = await ethers.getSigners(4);
 
         //deploy math library
-        const Math = await ethers.getContractFactory("MathContract");
-        const math = await Math.deploy();
-        await math.deployed();
+        const Maths = await ethers.getContractFactory("Maths");
+        const maths = await Maths.deploy();
+        await maths.deployed();
 
         //deploy signature verifier
         const SignatureVerifier = await ethers.getContractFactory("SignatureVerifier");
@@ -23,7 +23,7 @@ describe("Pythia Factory", function () {
             "MarketDeployer",
             {
                 libraries: {
-                    "MathContract": math.address,
+                    "Maths": maths.address,
                     "SignatureVerifier": signatureVerifier.address
                 }
             }

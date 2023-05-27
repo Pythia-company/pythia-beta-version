@@ -2,8 +2,7 @@ const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { ethers } = require("hardhat");
-const { logger } = require("ethers");
-const {solidityKeccak256, solidityPack, AbiCoder, keccak256} = ethers.utils;
+const {solidityKeccak256, solidityPack, keccak256} = ethers.utils;
 
 describe("TestMarket", function () {
     async function deployTestMarket(){
@@ -11,9 +10,9 @@ describe("TestMarket", function () {
         const accounts = await ethers.getSigners(1);
 
         //deploy math library
-        const Math = await ethers.getContractFactory("MathContract");
-        const math = await Math.deploy();
-        await math.deployed();
+        const Maths = await ethers.getContractFactory("Maths");
+        const maths = await Maths.deploy();
+        await maths.deployed();
 
         //deploy signature verifier
         const SignatureVerifier = await ethers.getContractFactory("SignatureVerifier");
@@ -31,7 +30,7 @@ describe("TestMarket", function () {
             "TestMarket",
             {
                 libraries: {
-                    "MathContract": math.address,
+                    "Maths": maths.address,
                     "SignatureVerifier": signatureVerifier.address
                 }
             }

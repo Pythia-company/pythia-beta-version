@@ -68,7 +68,7 @@ abstract contract AbstractMarket{
             answer == predictions[tx.origin].decodedPrediction,
             "prediction was incorrect"
         );
-        return MathContract.computeReward(
+        return Maths.computeReward(
             wageDeadline,
             creationDate,
             predictions[tx.origin].predictionTimestamp,

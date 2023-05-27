@@ -1,78 +1,78 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-library MathContract{
+library Maths{
 
-    uint256 constant defaultDenomination = 7;
+    uint256 constant rewardDenomination = 6;
+    uint256 constant LOG2_E = 14426950;
+    uint256 constant ONE = 10 ** 7;
 
     function computeReward(
         uint256 wageDeadline,
         uint256 creationDate,
         uint256 predictionTimestamp,
         uint256 numberOfOutcomes
-    ) external view returns(uint256){
-        uint256 result = 1;
-        uint256 timeAfterPrediction = (
+    ) external pure returns(uint256){
+        //time before wage deadline
+        uint256 timeBeforeDeadline = (
             wageDeadline - predictionTimestamp
         );
+        //length of the market
         uint256 marketLength = (
             wageDeadline - creationDate
         );
-        
-        result *= defaultDenomination;
-        result *= (
-            ln(marketLength, defaultDenomination) *
-            timeAfterPrediction /
-            marketLength /
-            10 ** defaultDenomination
+        //log of market length
+        uint256 logMarketLength = (
+            ln(marketLength * ONE)
         );
-        result *= (
-            ln(numberOfOutcomes, defaultDenomination) / 
-            10 ** defaultDenomination
+        //log of number of outcomes
+        uint256 logNumberOfOutcomes = (
+            ln(numberOfOutcomes * ONE)
         );
-        return result;
+        //result
+        return (
+            (10 ** rewardDenomination) * 
+            logMarketLength *
+            logNumberOfOutcomes *
+            timeBeforeDeadline /
+            marketLength / 
+            ONE /
+            ONE
+        );
     }
 
     function ln(
-        uint256 x,
-        uint256 _denomination
-    ) validDenomination(_denomination) validLogInput(x) internal pure returns (uint) {
-        uint256 one = 10 ** 11;
-        uint256 log2_e = 14426950409;
-        uint256 denominationDiff = defaultDenomination - _denomination;
-        log2_e /= 10 ** denominationDiff;
-        one /= 10 ** denominationDiff;
-        x *=  10 ** _denomination;
-    
-        uint256 ilog2 = floorLog2(x / one);
+        uint256 x
+    ) validLogInput(x) internal pure returns (uint256) {
+        uint256 ilog2 = floorLog2(x / ONE);
         uint256 z = (x >> ilog2);
-        uint256 term = (z - one) * one / (z + one);
+        uint256 term = (z - ONE) * ONE / (z + ONE);
         uint256 halflnz = term;
-        uint256 termpow = term * term / one * term / one;
+        uint256 termpow = term * term / ONE * term / ONE;
         halflnz += termpow / 3;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 5;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 7;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 9;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 11;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 13;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 15;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 17;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 19;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 21;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 23;
-        termpow = termpow * term / one * term / one;
+        termpow = termpow * term / ONE * term / ONE;
         halflnz += termpow / 25;
-        return (ilog2 * one) * one / log2_e + 2 * halflnz;
+        return (ilog2 * ONE) * ONE / LOG2_E + 2 * halflnz;
     }
 
     function floorLog2(uint256 x) internal pure returns (uint256) {
@@ -88,11 +88,6 @@ library MathContract{
         return n;
     }
 
-    modifier validDenomination(uint256 _denomination){
-        if(_denomination < defaultDenomination){
-            _;
-        }
-    }
     modifier validLogInput(uint256 x){
         if(x > 0){
             _;
