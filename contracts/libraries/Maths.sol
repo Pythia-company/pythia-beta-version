@@ -3,12 +3,40 @@ pragma solidity ^0.8.0;
 
 library MathContract{
 
-    uint256 public constant defaultDenomination = 10;
+    uint256 constant defaultDenomination = 7;
+
+    function computeReward(
+        uint256 wageDeadline,
+        uint256 creationDate,
+        uint256 predictionTimestamp,
+        uint256 numberOfOutcomes
+    ) external view returns(uint256){
+        uint256 result = 1;
+        uint256 timeAfterPrediction = (
+            wageDeadline - predictionTimestamp
+        );
+        uint256 marketLength = (
+            wageDeadline - creationDate
+        );
+        
+        result *= defaultDenomination;
+        result *= (
+            ln(marketLength, defaultDenomination) *
+            timeAfterPrediction /
+            marketLength /
+            10 ** defaultDenomination
+        );
+        result *= (
+            ln(numberOfOutcomes, defaultDenomination) / 
+            10 ** defaultDenomination
+        );
+        return result;
+    }
 
     function ln(
         uint256 x,
         uint256 _denomination
-    ) validDenomination(_denomination) validLogInput(x) public pure returns (uint) {
+    ) validDenomination(_denomination) validLogInput(x) internal pure returns (uint) {
         uint256 one = 10 ** 11;
         uint256 log2_e = 14426950409;
         uint256 denominationDiff = defaultDenomination - _denomination;
@@ -47,7 +75,7 @@ library MathContract{
         return (ilog2 * one) * one / log2_e + 2 * halflnz;
     }
 
-    function floorLog2(uint256 x) public pure returns (uint256) {
+    function floorLog2(uint256 x) internal pure returns (uint256) {
         uint256 n;
         if (x >= 2**128) { x >>= 128; n += 128;}
         if (x >= 2**64) { x >>= 64; n += 64;}

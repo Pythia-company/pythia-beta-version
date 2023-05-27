@@ -71,7 +71,7 @@ contract PythiaFactory is ERC721, Ownable {
     mapping(uint256 => ReputationTransaction) private reputationTransactions;
 
     // legth of trial period
-    uint256 trialPeriod;
+    uint256 public trialPeriod;
 
     //subcription contract
     ERC948 subscriptionContract;
@@ -89,11 +89,11 @@ contract PythiaFactory is ERC721, Ownable {
         address _subscriptionTokenAddress,
         address _treasuryAddress,
         uint256 _baseAmountRecurring
-    ) ERC721("PythiaAccoun1", "PYA1")
+    ) ERC721("PythiaFactory", "PYAF")
     Ownable()
     {
         // trial period in days
-        trialPeriod = _trialPeriodDays * 24 * 60 * 60;
+        trialPeriod = _trialPeriodDays * 24 * 60 * 60 * 1000;
 
         subscriptionContract = new ERC948(
                 _subscriptionTokenAddress,
@@ -280,10 +280,8 @@ contract PythiaFactory is ERC721, Ownable {
 
         AbstractMarket _market = AbstractMarket(_marketAddress);
 
-        uint256 _reward = _market.disclosePrediction(
-            _decodedPrediction,
-            _signature
-        );
+        _market.verifyPrediction(_decodedPrediction, _signature);
+        uint256 _reward = _market.calculateReward();
     
         address _reputationTokenAddress = markets[_marketAddress].reputationTokenAddress;
 

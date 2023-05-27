@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./AbstractMarket.sol";
 import "../chainlink-contracts/PriceFeeder.sol";
+import "../PythiaFactory.sol";
 
 
 
@@ -13,6 +14,7 @@ contract PriceFeedsMarket is AbstractMarket{
 
     address priceFeedAddress;
     PriceFeeder priceFeeder;
+    PythiaFactory pythiaFactory;
 
     constructor(
         address _factoryContractAddress,
@@ -24,7 +26,6 @@ contract PriceFeedsMarket is AbstractMarket{
         address _priceFeedAddress,
         address _priceFeederAddress
     ) AbstractMarket(
-        _factoryContractAddress,
         _question,
         _numberOfOutcomes,
         _wageDeadline,
@@ -33,16 +34,30 @@ contract PriceFeedsMarket is AbstractMarket{
     {
         outcomes = _outcomes;
         priceFeeder = PriceFeeder(_priceFeederAddress);
+        pythiaFactory = PythiaFactory(_factoryContractAddress);
         priceFeedAddress = _priceFeedAddress;
     }
 
-    function resolve() external override {
+    function predict(bytes32 _encodedPrediction) external override{
         require(
-            block.timestamp > resolutionDate,
-            "resolution date has not arrived yet"
+            block.timestamp <= wageDeadline,
+            "market is no longer active"
         );
-        answer = _getMarketOutcome();
-        resolved = true;
+        require(pythiaFactory.isUser(msg.sender), "user is not registered");
+        require(
+            (
+                (pythiaFactory.isSubscribed(msg.sender) == true) ||
+                (pythiaFactory.isInTrial(msg.sender) == true)
+            ),
+            "trial has expired, subscribe to make predictions"
+        );
+        require(
+            predictions[msg.sender].predicted == false,
+            "user has already predicted"
+        );
+        predictions[msg.sender].encodedPrediction = _encodedPrediction;
+        predictions[msg.sender].predictionTimestamp = block.timestamp;
+        predictions[msg.sender].predicted = true;
     }
 
     function _getMarketOutcome() internal view override returns(uint256){

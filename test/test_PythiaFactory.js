@@ -13,12 +13,18 @@ describe("Pythia Factory", function () {
         const math = await Math.deploy();
         await math.deployed();
 
+        //deploy signature verifier
+        const SignatureVerifier = await ethers.getContractFactory("SignatureVerifier");
+        const signatureVerifier = await SignatureVerifier.deploy();
+        await signatureVerifier.deployed();
+
         //deploy market Deployer library
         const MarketDeployer = await ethers.getContractFactory(
             "MarketDeployer",
             {
                 libraries: {
-                    "MathContract": math.address
+                    "MathContract": math.address,
+                    "SignatureVerifier": signatureVerifier.address
                 }
             }
         );

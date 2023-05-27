@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import './AbstractMarket.sol';
 import '../reality-eth/RealityETH.sol';
+import "../PythiaFactory.sol";
 
 
 
@@ -14,6 +15,7 @@ contract RealityETHMarket is AbstractMarket{
     RealityETH_v3_0 realityETH;
     bytes32 realityETHQuestionId;
     uint256 template_id;
+    PythiaFactory pythiaFactory;
 
     constructor(
         address _factoryContractAddress,
@@ -28,7 +30,6 @@ contract RealityETHMarket is AbstractMarket{
         address _realityEthAddress,
         uint256 _min_bond
     ) AbstractMarket(
-        _factoryContractAddress,
         _question,
         _numberOfOutcomes,
         _wageDeadline,
@@ -39,6 +40,7 @@ contract RealityETHMarket is AbstractMarket{
         arbitrator = _arbitrator;
         timeout = _timeout;
         realityETH = RealityETH_v3_0(_realityEthAddress);
+        pythiaFactory = PythiaFactory(_factoryContractAddress);
         min_bond = _min_bond;
         nonce = _nonce;
 
@@ -53,13 +55,23 @@ contract RealityETHMarket is AbstractMarket{
         );
     }
 
-    function resolve() external override{
+    function predict(bytes32 _encodedPrediction) external override{
         require(
-            block.timestamp > resolutionDate,
-            "resolution date has not arrived yet"
+            block.timestamp <= wageDeadline,
+            "market is not active"
         );
-        answer =  _getMarketOutcome();
-        resolved = true;
+        require(pythiaFactory.isUser(msg.sender), "user is not registered");
+        require(
+            (
+                (pythiaFactory.isSubscribed(msg.sender) == true) ||
+                (pythiaFactory.isInTrial(msg.sender) == true)
+            ),
+            "trial has expired, subscribe to make predictions"
+        );
+        require(predictions[msg.sender].predicted == false, "user has already predicted");
+        predictions[msg.sender].encodedPrediction = _encodedPrediction;
+        predictions[msg.sender].predictionTimestamp = block.timestamp;
+        predictions[msg.sender].predicted = true;
     }
 
     function _getMarketOutcome() internal view override returns(uint256){
