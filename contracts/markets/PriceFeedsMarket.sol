@@ -58,17 +58,36 @@ contract PriceFeedsMarket is AbstractMarket{
         predictions[msg.sender].encodedPrediction = _encodedPrediction;
         predictions[msg.sender].predictionTimestamp = block.timestamp;
         predictions[msg.sender].predicted = true;
+        //log prediction event
+        pythiaFactory.logNewPrediction(
+            msg.sender,
+            address(this),
+            _encodedPrediction,
+            block.timestamp
+        );
+    }
+
+    function resolve() external {
+        require(
+            block.timestamp > resolutionDate,
+            "resolution date has not arrived yet"
+        );
+        answer = _getMarketOutcome();
+        resolved = true;
+        pythiaFactory.logMarketResolved(
+            address(this)
+        );
     }
 
     function _getMarketOutcome() internal view override returns(uint256){
         uint256 price = priceFeeder.getLatestPrice(priceFeedAddress);
-        for(uint256 i = 0; i < numberOfOutcomes - 2; i++){
-            if(price < outcomes[0]){
-                return 0;
-            } else if(price < outcomes[i]){
+        for(uint256 i = 0; i < numberOfOutcomes; i++){
+            if(price <= outcomes[i]){
+                return i;
+            } else if(price > outcomes[i]){
                 return i + 1;
             }
         }
-        return numberOfOutcomes;
+        return numberOfOutcomes - 1;
     }
 }

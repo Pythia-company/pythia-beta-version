@@ -2,14 +2,9 @@
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '../PythiaFactory.sol';
 
 contract ERC948 {
-
-    event NewSubscription(
-        address _ownerAddress,
-        uint _periodMultiplier,
-        uint _startTime
-    );
 
     struct Subscription {
         uint periodMultiplier;
@@ -26,9 +21,12 @@ contract ERC948 {
     ERC20 subscriptionToken;
     address payeeAddress;
     uint256 baseAmountRecurring;
+    PythiaFactory pythiaFactory;
+
 
 
     constructor(
+        address _pythiaFactoryAddress,
         address _subscriptionTokenAddress,
         address _payeeAddress,
         uint256 _baseAmountRecurring
@@ -36,6 +34,7 @@ contract ERC948 {
         subscriptionToken = ERC20(_subscriptionTokenAddress);
         payeeAddress = _payeeAddress;
         baseAmountRecurring = _baseAmountRecurring;
+        pythiaFactory = PythiaFactory(_pythiaFactoryAddress);
 
     }
 
@@ -70,12 +69,11 @@ contract ERC948 {
         subscriptions[msg.sender].nextPaymentTime = block.timestamp + _periodMultiplier;
         // Make initial payment
         subscriptionToken.transferFrom(msg.sender, payeeAddress, _amountRecurring);
-
-        // Emit NewSubscription event
-        emit NewSubscription(
+        //log subscription creation event
+        pythiaFactory.logNewSubscription(
             msg.sender,
-            subscriptions[msg.sender].periodMultiplier,
-            subscriptions[msg.sender].startTime
+            _periodMultiplier,
+            block.timestamp
         );
     }
     

@@ -12,30 +12,48 @@ import "./libraries/MarketDeployer.sol";
 contract PythiaFactory is ERC721, Ownable {
     using Counters for Counters.Counter;
 
-    event NewMarket(
+    event MarketCreated(
         address indexed _marketAddress,
+        uint256 _creationDate,
         string _question,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
-        address _reputationTokenAddress
+        address _reputationTokenAddress,
+        string marketType
     );
 
-    event NewUser(
+    event UserCreated(
         address indexed _user,
         uint256 _registrationDate
     );
 
-    event NewReputationToken(
+    event ReputationTokenCreated(
         address indexed _address
     );
 
-    event NewReputationTransaction(
+    event ReputationTransactionSent(
         address indexed _user,
         address indexed _market,
-        uint256 amount,
-        bool received
+        uint256 _amount
     );
 
+    event PredictionCreated(
+        address indexed _user,
+        address indexed _market,
+        bytes32 _prediction,
+        uint256 _predictionDate
+    );
+
+    event SubsciptionCreated(
+        address indexed _user,
+        uint256 _periodMultiplier,
+        uint256 _startTime
+    );
+
+    event MarketResolved(
+        address indexed _market,
+        uint256 _answer
+    );
 
     // user representation
     struct User{
@@ -96,6 +114,7 @@ contract PythiaFactory is ERC721, Ownable {
         trialPeriod = _trialPeriodDays * 24 * 60 * 60 * 1000;
 
         subscriptionContract = new ERC948(
+                address(this),
                 _subscriptionTokenAddress,
                 _treasuryAddress,
                 _baseAmountRecurring
@@ -116,7 +135,7 @@ contract PythiaFactory is ERC721, Ownable {
             }
         );
         users[msg.sender] = user;
-        emit NewUser(msg.sender, user.registrationDate);
+        emit UserCreated(msg.sender, user.registrationDate);
     }
     
     /**
@@ -196,12 +215,14 @@ contract PythiaFactory is ERC721, Ownable {
         );
         markets[_marketAddress].active = true;
         markets[_marketAddress].reputationTokenAddress = _reputationTokenAddress;
-        emit NewMarket(
+        emit MarketCreated(
             _marketAddress,
+            block.timestamp,
             _question,
             _wageDeadline,
             _resolutionDate,
-            _reputationTokenAddress
+            _reputationTokenAddress,
+            "pricefeeds"
         );
     }
 
@@ -246,16 +267,96 @@ contract PythiaFactory is ERC721, Ownable {
         );
         markets[_marketAddress].active = true;
         markets[_marketAddress].reputationTokenAddress = _reputationTokenAddress;
-        emit NewMarket(
+        emit MarketCreated(
             _marketAddress,
+            block.timestamp,
             _question,
             _wageDeadline,
             _resolutionDate,
-            _reputationTokenAddress
+            _reputationTokenAddress,
+            "realityeth"
+        );
+    }
+    
+    /**
+    * @dev recieve rewards for multiple markets
+    * @param marketAdresses market address
+    * @param decodedPredictions decoded predictions
+    * @param signatures signatures
+    */
+    function receiveRewardMultipleMarkets(
+        address[] calldata marketAdresses,
+        uint256[] calldata decodedPredictions,
+        bytes[] calldata signatures
+    ) external returns(bool){
+        uint256 nmarkets = marketAdresses.length;
+        uint256 ndecodedPredictions = decodedPredictions.length;
+        uint256 nsignatures = signatures.length;
+        require(
+            nmarkets == ndecodedPredictions,
+            "number of predictions passed is not equal to number of marketds"
+        );
+
+        require(
+            nmarkets == nsignatures,
+            "number of signatures passed is not equal to number of marketds"
+        );
+        for(uint256 i = 0; i < nmarkets;) {
+            unchecked {
+                receiveReward(
+                    marketAdresses[i],
+                    decodedPredictions[i],
+                    signatures[i]
+                );
+            }
+        }
+        return true;
+    }
+
+    function logNewPrediction(
+        address _user,
+        address _market,
+        bytes32 _prediction,
+        uint256 _predictionTimestamp
+    ) external {
+        emit PredictionCreated(
+            _user,
+            _market,
+            _prediction,
+            _predictionTimestamp
         );
     }
 
-    /**
+    function logNewSubscription(
+        address _ownerAddress,
+        uint _periodMultiplier,
+        uint _startTime
+    ) external {
+        emit SubsciptionCreated(
+            _ownerAddress,
+            _periodMultiplier,
+            _startTime
+        );
+    }
+
+    function logMarketResolved(
+        address _market
+    ) external {
+        AbstractMarket market = AbstractMarket(_market);
+        require(market.resolved() == true, "market is not resolved");
+        emit MarketResolved(
+            _market,
+            market.answer()
+        );
+    }
+
+    
+    function updateTrialPeriod(uint256 _newtrialPeriod) public onlyOwner{
+        trialPeriod =  _newtrialPeriod;
+    }
+
+
+     /**
     * @dev receive reward for the market
     * @param _marketAddress Address of the market
     * @param _decodedPrediction hash of signature of prediction
@@ -265,7 +366,7 @@ contract PythiaFactory is ERC721, Ownable {
         address _marketAddress,
         uint256 _decodedPrediction,
         bytes calldata _signature
-    ) external {
+    ) internal {
         require(markets[_marketAddress].active == true, "market with this address does not exists");
         uint256 _reputationTransactionHash = uint256(
             keccak256(
@@ -295,17 +396,11 @@ contract PythiaFactory is ERC721, Ownable {
         reputationTransactions[_reputationTransactionHash].received = true;
 
         _token.rate(msg.sender, _reward);
-        emit NewReputationTransaction(
+        emit ReputationTransactionSent(
             msg.sender,
             _marketAddress,
-            _reward,
-            true
+            _reward
         );
-    }
-
-    
-    function updateTrialPeriod(uint256 _newtrialPeriod) public onlyOwner{
-        trialPeriod =  _newtrialPeriod;
     }
 
     function _beforeTokenTransfer(

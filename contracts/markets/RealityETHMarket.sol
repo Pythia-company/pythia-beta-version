@@ -72,6 +72,25 @@ contract RealityETHMarket is AbstractMarket{
         predictions[msg.sender].encodedPrediction = _encodedPrediction;
         predictions[msg.sender].predictionTimestamp = block.timestamp;
         predictions[msg.sender].predicted = true;
+        //log prediction event
+        pythiaFactory.logNewPrediction(
+            msg.sender,
+            address(this),
+            _encodedPrediction,
+            block.timestamp
+        );
+    }
+
+    function resolve() external {
+        require(
+            block.timestamp > resolutionDate,
+            "resolution date has not arrived yet"
+        );
+        answer = _getMarketOutcome();
+        resolved = true;
+        pythiaFactory.logMarketResolved(
+            address(this)
+        );
     }
 
     function _getMarketOutcome() internal view override returns(uint256){

@@ -116,14 +116,5 @@ abstract contract AbstractMarket{
         return predictions[_user].verifiedPrediction;
     }
 
-    function resolve() external {
-        require(
-            block.timestamp > resolutionDate,
-            "resolution date has not arrived yet"
-        );
-        answer = _getMarketOutcome();
-        resolved = true;
-    }
-
     function _getMarketOutcome() internal view virtual returns(uint256);
 }
