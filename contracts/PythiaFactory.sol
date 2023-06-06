@@ -50,6 +50,13 @@ contract PythiaFactory is ERC721, Ownable {
         uint256 _startTime
     );
 
+    event ERC948Deployed(
+        address _pythiaFactoryAddress,
+        address _subscriptionTokenAddress,
+        address _payeeAddress,
+        uint256 _baseAmountRecurring
+    );
+
     event MarketResolved(
         address indexed _market,
         uint256 _answer
@@ -118,6 +125,13 @@ contract PythiaFactory is ERC721, Ownable {
                 _subscriptionTokenAddress,
                 _treasuryAddress,
                 _baseAmountRecurring
+        );
+
+        emit ERC948Deployed(
+            address(this),
+            _subscriptionTokenAddress,
+            _treasuryAddress,
+            _baseAmountRecurring
         );
     }
 
