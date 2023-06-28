@@ -7,7 +7,7 @@ library Maths{
     uint256 constant LOG2_E = 14426950;
     uint256 constant ONE = 10 ** 7;
 
-    function computeReward(
+    function computeReputation(
         uint256 wageDeadline,
         uint256 creationDate,
         uint256 predictionTimestamp,

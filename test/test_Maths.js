@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("Maths", function (){
-    it("computeReward", async function(){
+    it("computeReputation", async function(){
         const Maths = await ethers.getContractFactory(
             "Maths"
         );
@@ -38,7 +38,7 @@ describe("Maths", function (){
             marketLength
         );
 
-        const reward = await maths.computeReward(
+        const reward = await maths.computeReputation(
             wageDeadline,
             creationDate,
             predictionTimestamp,

@@ -13,53 +13,58 @@ contract PythiaFactory is ERC721, Ownable {
     using Counters for Counters.Counter;
 
     event MarketCreated(
-        address indexed _marketAddress,
-        uint256 _creationDate,
+        address indexed _address,
+        uint256 _blocktimestamp,
         string _question,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
         address _reputationTokenAddress,
-        string marketType
+        string _type
     );
 
     event UserCreated(
-        address indexed _user,
-        uint256 _registrationDate
+        address indexed _address,
+        uint256 _blocktimestamp
     );
 
     event ReputationTokenCreated(
-        address indexed _address
+        address indexed _address,
+        address indexed _topic,
+        uint256 _creationTimestamp
     );
 
     event ReputationTransactionSent(
         address indexed _user,
         address indexed _market,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _transactionTimestamp
     );
 
     event PredictionCreated(
         address indexed _user,
         address indexed _market,
         bytes32 _prediction,
-        uint256 _predictionDate
+        uint256 _predictionTimestamp
     );
 
     event SubsciptionCreated(
         address indexed _user,
         uint256 _periodMultiplier,
-        uint256 _startTime
+        uint256 _startTimestamp
     );
 
     event ERC948Deployed(
         address _pythiaFactoryAddress,
         address _subscriptionTokenAddress,
         address _payeeAddress,
-        uint256 _baseAmountRecurring
+        uint256 _baseAmountRecurring,
+        uint256 _timestamp
     );
 
     event MarketResolved(
-        address indexed _market,
-        uint256 _answer
+        address indexed _address,
+        uint256 _answer,
+        uint256 _resolutionTimestamp
     );
 
     // user representation
@@ -131,7 +136,8 @@ contract PythiaFactory is ERC721, Ownable {
             address(this),
             _subscriptionTokenAddress,
             _treasuryAddress,
-            _baseAmountRecurring
+            _baseAmountRecurring,
+            block.timestamp
         );
     }
 
@@ -293,12 +299,12 @@ contract PythiaFactory is ERC721, Ownable {
     }
     
     /**
-    * @dev recieve rewards for multiple markets
+    * @dev receive reputation for multiple markets
     * @param marketAdresses market address
     * @param decodedPredictions decoded predictions
     * @param signatures signatures
     */
-    function receiveRewardMultipleMarkets(
+    function receiveReputationMultipleMarkets(
         address[] calldata marketAdresses,
         uint256[] calldata decodedPredictions,
         bytes[] calldata signatures
@@ -317,7 +323,7 @@ contract PythiaFactory is ERC721, Ownable {
         );
         for(uint256 i = 0; i < nmarkets;) {
             unchecked {
-                receiveReward(
+                receiveReputation(
                     marketAdresses[i],
                     decodedPredictions[i],
                     signatures[i]
@@ -360,7 +366,8 @@ contract PythiaFactory is ERC721, Ownable {
         require(market.resolved() == true, "market is not resolved");
         emit MarketResolved(
             _market,
-            market.answer()
+            market.answer(),
+            block.timestamp
         );
     }
 
@@ -371,12 +378,12 @@ contract PythiaFactory is ERC721, Ownable {
 
 
      /**
-    * @dev receive reward for the market
+    * @dev receive reputation for the market
     * @param _marketAddress Address of the market
     * @param _decodedPrediction hash of signature of prediction
     * @param  _signature Supposed preimage of _decodedPrediction
     */
-    function receiveReward(
+    function receiveReputation(
         address _marketAddress,
         uint256 _decodedPrediction,
         bytes calldata _signature
@@ -390,13 +397,13 @@ contract PythiaFactory is ERC721, Ownable {
 
         require(
             reputationTransactions[_reputationTransactionHash].received == false,
-            "reward was already received"
+            "reputation was already received"
         );
 
         AbstractMarket _market = AbstractMarket(_marketAddress);
 
         _market.verifyPrediction(_decodedPrediction, _signature);
-        uint256 _reward = _market.calculateReward();
+        uint256 _reputation = _market.calculateReputation();
     
         address _reputationTokenAddress = markets[_marketAddress].reputationTokenAddress;
 
@@ -406,14 +413,15 @@ contract PythiaFactory is ERC721, Ownable {
 
         reputationTransactions[_reputationTransactionHash].user = msg.sender;
         reputationTransactions[_reputationTransactionHash].market = _marketAddress;
-        reputationTransactions[_reputationTransactionHash].amount = _reward;
+        reputationTransactions[_reputationTransactionHash].amount = _reputation;
         reputationTransactions[_reputationTransactionHash].received = true;
 
-        _token.rate(msg.sender, _reward);
+        _token.rate(msg.sender, _reputation);
         emit ReputationTransactionSent(
             msg.sender,
             _marketAddress,
-            _reward
+            _reputation,
+            block.timestamp
         );
     }
 
