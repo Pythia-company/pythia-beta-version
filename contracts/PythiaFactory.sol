@@ -36,8 +36,9 @@ contract PythiaFactory is ERC721, Ownable {
     event ReputationTransactionSent(
         address indexed _user,
         address indexed _market,
-        uint256 _amount,
-        uint256 _transactionTimestamp
+        uint256 _reputation,
+        uint256 _decodedPrediction,
+        uint256 _reputationCollectionDatetime
     );
 
     event PredictionCreated(
@@ -421,6 +422,7 @@ contract PythiaFactory is ERC721, Ownable {
             msg.sender,
             _marketAddress,
             _reputation,
+            _decodedPrediction,
             block.timestamp
         );
     }
