@@ -12,14 +12,25 @@ import "./libraries/MarketDeployer.sol";
 contract PythiaFactory is ERC721, Ownable {
     using Counters for Counters.Counter;
 
-    event MarketCreated(
+    event PriceFeedsMarketCreated(
         address indexed _address,
-        uint256 _blocktimestamp,
+        uint256 _creationTimestamp,
+        string _question,
+        uint256[5] _options,
+        uint256 _numberOfOutcomes,
+        uint256 _wageDeadline,
+        uint256 _resolutionDate,
+        address _reputationTokenAddress
+    );
+
+    event RealityETHMarketCreated(
+        address indexed _address,
+        uint256 _creationTimestamp,
         string _question,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
         address _reputationTokenAddress,
-        string _type
+        uint256 _template
     );
 
     event UserCreated(
@@ -48,7 +59,7 @@ contract PythiaFactory is ERC721, Ownable {
         uint256 _predictionTimestamp
     );
 
-    event SubsciptionCreated(
+    event SubscriptionCreated(
         address indexed _user,
         uint256 _periodMultiplier,
         uint256 _startTimestamp
@@ -216,7 +227,7 @@ contract PythiaFactory is ERC721, Ownable {
     */
     function createPriceFeedsMarket(
         string memory _question,
-        uint256[10] memory _outcomes,
+        uint256[5] memory _outcomes,
         uint256 _numberOfOutcomes,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
@@ -236,14 +247,15 @@ contract PythiaFactory is ERC721, Ownable {
         );
         markets[_marketAddress].active = true;
         markets[_marketAddress].reputationTokenAddress = _reputationTokenAddress;
-        emit MarketCreated(
+        emit PriceFeedsMarketCreated(
             _marketAddress,
             block.timestamp,
             _question,
+            _outcomes,
+            _numberOfOutcomes,
             _wageDeadline,
             _resolutionDate,
-            _reputationTokenAddress,
-            "pricefeeds"
+            _reputationTokenAddress
         );
     }
 
@@ -288,15 +300,16 @@ contract PythiaFactory is ERC721, Ownable {
         );
         markets[_marketAddress].active = true;
         markets[_marketAddress].reputationTokenAddress = _reputationTokenAddress;
-        emit MarketCreated(
+        emit RealityETHMarketCreated(
             _marketAddress,
             block.timestamp,
             _question,
-            _wageDeadline,
+             _wageDeadline,
             _resolutionDate,
             _reputationTokenAddress,
-            "realityeth"
+            _template_id
         );
+
     }
     
     /**
@@ -353,7 +366,7 @@ contract PythiaFactory is ERC721, Ownable {
         uint _periodMultiplier,
         uint _startTime
     ) external {
-        emit SubsciptionCreated(
+        emit SubscriptionCreated(
             _ownerAddress,
             _periodMultiplier,
             _startTime

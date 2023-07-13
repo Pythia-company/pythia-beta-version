@@ -10,7 +10,7 @@ import "../PythiaFactory.sol";
 
 contract PriceFeedsMarket is AbstractMarket{
 
-    uint256[10] outcomes;
+    uint256[5] outcomes;
 
     address priceFeedAddress;
     PriceFeeder priceFeeder;
@@ -19,7 +19,7 @@ contract PriceFeedsMarket is AbstractMarket{
     constructor(
         address _factoryContractAddress,
         string memory _question,
-        uint256[10] memory _outcomes,
+        uint256[5] memory _outcomes,
         uint256 _numberOfOutcomes,
         uint256 _wageDeadline,
         uint256 _resolutionDate,

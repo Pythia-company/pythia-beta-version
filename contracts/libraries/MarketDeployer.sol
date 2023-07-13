@@ -9,7 +9,7 @@ library MarketDeployer {
     function deployPriceFeedsMarket(
         address _factoryContractAddress,
         string memory _question,
-        uint256[10] memory _outcomes,
+        uint256[5] memory _outcomes,
         uint256 _numberOfOutcomes,
         uint256 _wageDeadline,
         uint256 _resolutionDate,

@@ -4,6 +4,9 @@ require('dotenv').config();
 
 module.exports = {
   solidity: "0.8.18",
+  mocha: {
+    timeout: 1000000000,
+  },
   settings: {
     optimizer: {
       enabled: true,
@@ -13,7 +16,7 @@ module.exports = {
   networks: {
     mumbai: {
       url: process.env.RPC,
-      accounts: [`0x${process.env.PRIVATE_KEY}`]
+      accounts: [`0x${process.env.PRIV_KEY}`]
     },
   },
   etherscan: {
