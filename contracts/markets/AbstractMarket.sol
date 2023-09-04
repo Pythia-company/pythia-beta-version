@@ -116,5 +116,5 @@ abstract contract AbstractMarket{
         return predictions[_user].verifiedPrediction;
     }
 
-    function _getMarketOutcome() internal view virtual returns(uint256);
+    function _getMarketOutcome() public view virtual returns(uint256);
 }

@@ -16,7 +16,7 @@ module.exports = {
   networks: {
     mumbai: {
       url: process.env.RPC,
-      accounts: [`0x${process.env.PRIV_KEY}`]
+      accounts: [`0x${process.env.PRIVATE_KEY}`]
     },
   },
   etherscan: {

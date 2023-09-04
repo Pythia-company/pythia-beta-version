@@ -79,15 +79,15 @@ contract PriceFeedsMarket is AbstractMarket{
         );
     }
 
-    function _getMarketOutcome() internal view override returns(uint256){
-        uint256 price = priceFeeder.getLatestPrice(priceFeedAddress);
-        for(uint256 i = 0; i < numberOfOutcomes; i++){
-            if(price <= outcomes[i]){
-                return i;
-            } else if(price > outcomes[i]){
-                return i + 1;
+    function _getMarketOutcome() public view override returns(uint256){
+        unchecked {
+            uint256 price = priceFeeder.getLatestPrice(priceFeedAddress);
+            for(uint256 i = 0; i < numberOfOutcomes - 1; i++){
+                if(price < outcomes[i]){
+                    return i;
+                }
             }
+            return numberOfOutcomes - 1;
         }
-        return numberOfOutcomes - 1;
     }
 }

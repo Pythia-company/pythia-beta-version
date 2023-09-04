@@ -17,7 +17,13 @@ describe("PriceFeedsMarket", function () {
     async function deployPriceFeedsMarket(params){
 
         const provider = new ethers.providers.JsonRpcProvider(process.env.RPC);
-        const wallet = new ethers.Wallet(process.env.PRIV_KEY, provider);
+        const network = await provider.getNetwork();
+
+        // Get the network ID
+        const networkId = network.chainId;
+        console.log(`network: ${network}`)
+        console.log(`networkId: ${networkId}`)
+        const wallet = new ethers.Wallet(`0x${process.env.PRIVATE_KEY}`, provider);
 
         //deploy math library
         const Maths = await ethers.getContractFactory(
@@ -73,7 +79,7 @@ describe("PriceFeedsMarket", function () {
 
 
     it("testing resolution", async ()=>{
-        const delaySeconds = 1;
+        const delaySeconds = 5;
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
         const params = {      
@@ -87,12 +93,24 @@ describe("PriceFeedsMarket", function () {
             _priceFeederAddress: priceFeederAddress
         }
         const {market, wallet} = await deployPriceFeedsMarket(params);
-        await sleep(1000);
-        // resolve market
-        let tx = await market.connect(wallet).resolve();
+        console.log(`market address:${market.address}`)
+        await new Promise(
+            done => setTimeout(
+                () => done(),
+                (delaySeconds + 1) * 1000
+            )
+        );
+        // await expect(
+        //     await market.connect(wallet).resolve()
+        // ).to.be.revertedWith(
+        //     "resolution date has not arrived yet"
+        // );
+        let overrides = {
+            gasLimit: 130000,
+        };
+        const tx = await market.resolve(overrides)
         await tx.wait();
-
-        // expect answer
+        console.log("resolved");
         expect(await market.answer()).to.be.eq(1);
 
     })

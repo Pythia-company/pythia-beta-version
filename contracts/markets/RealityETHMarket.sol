@@ -93,7 +93,7 @@ contract RealityETHMarket is AbstractMarket{
         );
     }
 
-    function _getMarketOutcome() internal view override returns(uint256){
+    function _getMarketOutcome() public view override returns(uint256){
         return uint256(realityETH.resultFor(realityETHQuestionId));
     }
 }
