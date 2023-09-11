@@ -4,8 +4,8 @@ async function main(){
     //deploy math library
     const ReputationToken = await ethers.getContractFactory("ReputationToken");
     const reputationToken = await ReputationToken.deploy(
-        "trading reputation token",
-        "TRADREP"
+        "defi",
+        "DEFITOK"
     );
     await reputationToken.deployed();
     console.log(`reputation token address:${reputationToken.address}`);

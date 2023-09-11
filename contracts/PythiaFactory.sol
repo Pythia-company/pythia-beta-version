@@ -106,9 +106,6 @@ contract PythiaFactory is ERC721, Ownable {
     //markets
     mapping(address => Market) private markets;
 
-    // reputation token addresses
-    mapping(address => bool) reputationTokens;
-
     // reputation token transactions
     mapping(uint256 => ReputationTransaction) private reputationTransactions;
 
@@ -201,18 +198,6 @@ contract PythiaFactory is ERC721, Ownable {
         return subscriptionContract.isSubscribed(_user);
     }
 
-    /**
-    * @dev deploy reputation token
-    * @param _name Name
-    * @param _symbol Symbol
-    */
-    function deployNewReputationToken(
-        string memory _name,
-        string memory _symbol
-    ) external {
-        address _tokenAddress = address(new ReputationToken(_name, _symbol));
-        reputationTokens[_tokenAddress] = true;
-    }
 
     /**
     * @dev create PriceFeeds market
