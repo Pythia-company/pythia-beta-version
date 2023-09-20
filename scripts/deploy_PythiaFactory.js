@@ -25,6 +25,11 @@ async function main(){
     await marketDeployer.deployed();
 
 
+     //deploy reputation token deployer
+     const ReputationTokenDeployer = await ethers.getContractFactory("ReputationTokenDeployer");
+     const reputationTokenDeployer = await ReputationTokenDeployer.deploy();
+     await reputationTokenDeployer.deployed();
+ 
     //deploy pythia factory
     const params = {
         _trialPeriodDays: 30,
@@ -32,11 +37,13 @@ async function main(){
         _treasuryAddress: "0xFfeEcd85edF58666AEb95Cc2EFA855DA62E6ea56",
         _baseAmountRecurring: ethers.utils.parseEther('30')
     }
+
     const PythiaFactory = await ethers.getContractFactory(
         "PythiaFactory",
         {
             libraries: {
-                "MarketDeployer": marketDeployer.address
+                "MarketDeployer": marketDeployer.address,
+                "ReputationTokenDeployer": reputationTokenDeployer.address
             }
         }
     );

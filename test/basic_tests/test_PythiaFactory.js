@@ -31,6 +31,11 @@ describe("Pythia Factory", function () {
         const marketDeployer = await MarketDeployer.deploy();
         await marketDeployer.deployed();
 
+        //deploy reputation token deployer
+        const ReputationTokenDeployer = await ethers.getContractFactory("ReputationTokenDeployer");
+        const reputationTokenDeployer = await ReputationTokenDeployer.deploy();
+        await reputationTokenDeployer.deployed();
+
 
         //deploy pythia factory
         const params = {
@@ -39,11 +44,13 @@ describe("Pythia Factory", function () {
             _treasuryAddress: accounts[2].address,
             _baseAmountRecurring: 10**6
         }
+
         const PythiaFactory = await ethers.getContractFactory(
             "PythiaFactory",
             {
                 libraries: {
-                    "MarketDeployer": marketDeployer.address
+                    "MarketDeployer": marketDeployer.address,
+                    "ReputationTokenDeployer": reputationTokenDeployer.address
                 }
             }
         );
@@ -65,8 +72,10 @@ describe("Pythia Factory", function () {
             const {pythiaFactory, params} = await loadFixture(
                 deployPythiaFactory
             );
-            expect(await pythiaFactory.trialPeriod()).to.be.equal(
-                params._trialPeriodDays * 1000 * 3600 * 24
+            expect(
+                (await pythiaFactory.trialPeriod()).toString()
+            ).to.be.equal(
+                (params._trialPeriodDays * 3600 * 24).toString()
             );
         });
 
@@ -98,10 +107,12 @@ describe("Pythia Factory", function () {
             //check that true
             expect(await pythiaFactory.isInTrial(accounts[0].address)).to.be.equal(true);
             const now = Date.now();
-            await time.increase((params._trialPeriodDays + 1) * 24 * 3600 * 1000);
+            await time.increase((params._trialPeriodDays + 1) * 24 * 3600);
 
             //check that false
-            expect(await pythiaFactory.isInTrial(accounts[0].address)).to.be.equal(false);
+            expect(
+                await pythiaFactory.isInTrial(accounts[0].address)
+            ).to.be.equal(false);
         });
     });
 });

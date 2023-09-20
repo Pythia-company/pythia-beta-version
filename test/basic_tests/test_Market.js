@@ -77,14 +77,18 @@ describe("TestMarket", function () {
             const {testMarket, params} = await loadFixture(
                 deployTestMarket
             );
-            expect(await testMarket.wageDeadline()).to.be.equal(
-                params._wageDeadline
+            expect(
+                (await testMarket.wageDeadline()).toString()
+            ).to.be.equal(
+                params._wageDeadline.toString()
             );
-            expect(await testMarket.resolutionDate()).to.be.equal(
-                params._resolutionDate
+            expect(
+                (await testMarket.resolutionDate()).toString()
+            ).to.be.equal(
+                params._resolutionDate.toString()
             );
-            expect(await testMarket.numberOfOutcomes()).to.be.equal(
-                params._numberOfOutcomes
+            expect((await testMarket.numberOfOutcomes()).toString()).to.be.equal(
+                params._numberOfOutcomes.toString()
             );
         });
     });

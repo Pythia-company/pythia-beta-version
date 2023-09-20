@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./markets/AbstractMarket.sol";
-import "./tokens/ReputationToken.sol";
 import "./subscription/Subscription.sol";
 import "./libraries/MarketDeployer.sol";
+import "./libraries/ReputationTokenDeployer.sol";
 
 contract PythiaFactory is ERC721, Ownable {
     using Counters for Counters.Counter;
@@ -25,7 +25,7 @@ contract PythiaFactory is ERC721, Ownable {
 
     event RealityETHMarketCreated(
         address indexed _address,
-        uint256 _creationTimestamp,
+        uint256 _creationDate,
         string _question,
         uint256 _wageDeadline,
         uint256 _resolutionDate,
@@ -35,13 +35,14 @@ contract PythiaFactory is ERC721, Ownable {
 
     event UserCreated(
         address indexed _address,
-        uint256 _blocktimestamp
+        uint256 _registrationDate
     );
 
     event ReputationTokenCreated(
         address indexed _address,
-        address indexed _topic,
-        uint256 _creationTimestamp
+        string _topic,
+        string _symbol,
+        uint256 _creationDate
     );
 
     event ReputationTransactionSent(
@@ -49,20 +50,20 @@ contract PythiaFactory is ERC721, Ownable {
         address indexed _market,
         uint256 _reputation,
         uint256 _decodedPrediction,
-        uint256 _reputationCollectionDatetime
+        uint256 _reputationCollectionDate
     );
 
     event PredictionCreated(
         address indexed _user,
         address indexed _market,
         bytes32 _prediction,
-        uint256 _predictionTimestamp
+        uint256 _predictionDate
     );
 
     event SubscriptionCreated(
         address indexed _user,
         uint256 _periodMultiplier,
-        uint256 _startTimestamp
+        uint256 _startDate
     );
 
     event ERC948Deployed(
@@ -70,13 +71,13 @@ contract PythiaFactory is ERC721, Ownable {
         address _subscriptionTokenAddress,
         address _payeeAddress,
         uint256 _baseAmountRecurring,
-        uint256 _timestamp
+        uint256 _creationDate
     );
 
     event MarketResolved(
         address indexed _address,
         uint256 _answer,
-        uint256 _resolutionTimestamp
+        uint256 _resolutionDate
     );
 
     // user representation
@@ -109,6 +110,9 @@ contract PythiaFactory is ERC721, Ownable {
     // reputation token transactions
     mapping(uint256 => ReputationTransaction) private reputationTransactions;
 
+    // reputation tokens
+    mapping(address => bool) private reputationTokens;
+
     // legth of trial period
     uint256 public trialPeriod;
 
@@ -132,7 +136,7 @@ contract PythiaFactory is ERC721, Ownable {
     Ownable()
     {
         // trial period in days
-        trialPeriod = _trialPeriodDays * 24 * 60 * 60 * 1000;
+        trialPeriod = _trialPeriodDays * 24 * 60 * 60;
 
         subscriptionContract = new ERC948(
                 address(this),
@@ -296,7 +300,30 @@ contract PythiaFactory is ERC721, Ownable {
         );
 
     }
-    
+
+    /**
+    * @dev deploys reputation token
+    * @param _topic topic
+    * @param _symbol symbol
+    */
+    function deployReputationToken(
+        string memory _topic,
+        string memory _symbol
+    ) external {
+       address _reputationTokenAddress = ReputationTokenDeployer.deploy(
+            _topic,
+            _symbol
+       );
+
+        emit ReputationTokenCreated(
+            _reputationTokenAddress,
+            _topic,
+            _symbol,
+            block.timestamp
+        );
+        // return true;
+    }
+
     /**
     * @dev receive reputation for multiple markets
     * @param marketAdresses market address

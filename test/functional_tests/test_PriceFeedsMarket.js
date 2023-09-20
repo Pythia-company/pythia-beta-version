@@ -111,7 +111,7 @@ describe("PriceFeedsMarket", function () {
         const tx = await market.resolve(overrides)
         await tx.wait();
         console.log("resolved");
-        expect(await market.answer()).to.be.eq(1);
+        expect((await market.answer()).toString()).to.be.eq('1');
 
     })
 

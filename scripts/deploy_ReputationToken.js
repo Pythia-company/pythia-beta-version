@@ -1,14 +1,16 @@
 const { ethers } = require("hardhat");
 
+const pythiaFactoryAddress = "0x36f9023054D54d13fb4d8222689Df79DDE5BF344";
+
 async function main(){
-    //deploy math library
-    const ReputationToken = await ethers.getContractFactory("ReputationToken");
-    const reputationToken = await ReputationToken.deploy(
-        "defi",
-        "DEFITOK"
+    const pythiaFactory = await ethers.getContractAt(
+        "PythiaFactory",
+        pythiaFactoryAddress
     );
-    await reputationToken.deployed();
-    console.log(`reputation token address:${reputationToken.address}`);
+    await pythiaFactory.deployReputationToken(
+        "defi",
+        "DEFIREP"
+    );
 }
 
 main().catch((error) => {
