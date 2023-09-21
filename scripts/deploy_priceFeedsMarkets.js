@@ -8,7 +8,7 @@ const assetPairs = [
     'ETH/USD'
 ]
 
-const pythiaFactoryAddress = "0x36f9023054D54d13fb4d8222689Df79DDE5BF344";
+const pythiaFactoryAddress = "0x8fB8Db89414D9f3006133f956C249ba947C2737F";
 const priceFeederAddress = "0x03F2168Fedf95A9c5a965A8eF5e05E12F93395af";
 
 const priceFeedsAddresses = [
@@ -17,7 +17,7 @@ const priceFeedsAddresses = [
     "0x0715A7794a1dc8e42615F059dD6e406A6594651A"
 ]
 
-const reputationToken = "0x42D6FC1AfDeF953270a0306B28bf406082860748";
+const reputationToken = "0x3F1F03b36B753f0a7B86f9D2DAEC7d3E28E9F815";
 
 const assetPriceRanges = [
     [24000, 250000],
@@ -47,8 +47,8 @@ const getOutcomes = (index) => {
 const getDate = () => {
     return Math.floor(Date.now() / 1000) + faker.datatype.number(
         { 
-            min: 3600 * 10,
-            max: 3600 * 12
+            min: 15 * 3600,
+            max: 16 * 3600
         }
     )
 }

@@ -17,6 +17,11 @@ contract TestMarket is AbstractMarket{
         _resolutionDate
     ){}
 
+    function resolve() external override returns(bool){
+        answer = _getMarketOutcome();
+        return true;
+    }
+
     function _getMarketOutcome() public override view returns(uint256){
         return 0;
     }

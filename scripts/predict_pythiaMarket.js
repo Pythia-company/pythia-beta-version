@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const {solidityKeccak256, solidityPack, keccak256} = ethers.utils;
 
 // const pythiaFactoryAddress = "0xc395145D19136Eb55eA9bdA44EdFdBC40287bcC7";
-const marketAddress = "0x06737ca1D554F5261EFF6F687FCA0A6CAc4230F5";
+const marketAddress = "0xD22ce13F3D7BA0a692864CAc01249Fc498109077";
 const decodedPrediction = 0;
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC);

@@ -81,7 +81,7 @@ contract RealityETHMarket is AbstractMarket{
         );
     }
 
-    function resolve() external {
+    function resolve() external override returns(bool){
         require(
             block.timestamp > resolutionDate,
             "resolution date has not arrived yet"

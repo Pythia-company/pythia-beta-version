@@ -1,6 +1,6 @@
 const { ethers } = require("hardhat");
 
-const pythiaFactoryAddress = "0x36f9023054D54d13fb4d8222689Df79DDE5BF344";
+const pythiaFactoryAddress = "0x8fB8Db89414D9f3006133f956C249ba947C2737F";
 
 async function main(){
     const pythiaFactory = await ethers.getContractAt(

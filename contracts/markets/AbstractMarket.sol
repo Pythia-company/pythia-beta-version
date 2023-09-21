@@ -108,6 +108,8 @@ abstract contract AbstractMarket{
         );
     }
 
+    function resolve() external virtual returns(bool);
+
     function hasPredicted(address _user) external view returns(bool){
         return predictions[_user].predicted;
     }
