@@ -413,7 +413,7 @@ contract PythiaFactory is ERC721, Ownable {
         address _marketAddress,
         uint256 _decodedPrediction,
         bytes calldata _signature
-    ) internal {
+    ) public {
         require(markets[_marketAddress].active == true, "market with this address does not exists");
         uint256 _reputationTransactionHash = uint256(
             keccak256(

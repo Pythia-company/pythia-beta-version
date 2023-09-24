@@ -58,16 +58,7 @@ abstract contract AbstractMarket{
         predictions[msg.sender].predicted = true;
     }
 
-    function calculateReputation() external returns(uint256){
-        require(resolved == true, "market has not resolved");
-        require(
-            predictions[tx.origin].verifiedPrediction = true,
-            "verify predictions first"
-        );
-        require(
-            answer == predictions[tx.origin].decodedPrediction,
-            "prediction was incorrect"
-        );
+    function calculateReputation() external view returns(uint256){
         return Maths.computeReputation(
             wageDeadline,
             creationDate,
